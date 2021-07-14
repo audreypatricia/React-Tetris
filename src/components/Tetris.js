@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Stage from './Stage';
 import Display from './Display';
 import StartButton from './StartButton';
-import { createStage } from '../gameHelpers';
+import { createStage, checkCollision } from '../gameHelpers';
 
 // Styled components
 import { StyledTetrisWrapper, StyledTetris } from './styles/StyledTetris';
@@ -15,25 +15,39 @@ const Tetris = () => {
   const [gameOver, setGameOver] = useState(false);
 
   const [player, updatePlayerPos, resetPlayer] = usePlayer();
-  const [stage, setStage] = useStage(player);
+  const [stage, setStage] = useStage(player, resetPlayer);
 
   console.log('re-render');
 
   const movePlayer = dir => {
     // takes care of player left and right movements
-    console.log(dir);
-    updatePlayerPos({ x:dir, y: 0});
+    if (!checkCollision(player, stage, { x: dir, y: 0})){
+      // if we do not collide that move, or not dont do anything
+      updatePlayerPos({ x:dir, y: 0});
+    }
+
   }
 
   const startGame = () => {
     // Reset everything
     setStage(createStage());
     resetPlayer();
+    setGameOver(false);
   }
 
   const drop = () => {
     // drops the tetromino when we press the down arrow
-    updatePlayerPos({ x:0, y:1, collided: false});
+    if(!checkCollision(player, stage, { x: 0, y:1 })){
+      updatePlayerPos({ x:0, y:1, collided: false});
+    } else {
+      // if we collide something when we drop we need to set the collide property to true, because we need to merge it into the Stage
+      if( player.pos.y < 1 ){ // means the player is on the top of the stage
+        console.log('GAME OVER');
+        setGameOver(true);
+        setDropTime(null);
+      }
+      updatePlayerPos({ x: 0, y: 0, collided: true });
+    }
   }
 
   const dropPlayer = () => {
